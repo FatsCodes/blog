@@ -1,23 +1,28 @@
 from datetime import date
-from flask import Flask, abort, render_template, redirect, url_for, flash
+from flask import Flask, abort, render_template, redirect, url_for, flash, request
 from flask_bootstrap import Bootstrap5
 from flask_ckeditor import CKEditor
-from flask_gravatar import Gravatar
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
-from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import relationship
-# Import your forms from the forms.py
 from forms import CreatePostForm, RegisterForm, LoginForm
 from functools import wraps
 from flask import abort
 from forms import CommentForm
 from flask_gravatar import Gravatar
+import requests
+import smtplib
+import os
+from dotenv import load_dotenv
 
+load_dotenv("/Users/fatmaekbic/Downloads/day-69-starting-files-blog-with-users/.env")
+OWN_EMAIL = os.getenv("EMAIL")
+OWN_PASSWORD = os.getenv("PASSWORD")
+FLASK_KEY = os.getenv("FKEY")
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = FLASK_KEY
 ckeditor = CKEditor(app)
 Bootstrap5(app)
 
@@ -55,7 +60,7 @@ gravatar = Gravatar(app,
                     base_url=None)
 
 # CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///posts.db")
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -237,9 +242,24 @@ def about():
     return render_template("about.html")
 
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    return render_template("contact.html")
+    if request.method == "POST":
+        data = request.form
+        send_email(data["name"], data["email"], data["phone"], data["message"])
+        return render_template("contact.html", msg_sent=True)
+    return render_template("contact.html", msg_sent=False)
+
+def send_email(name, email, phone, message):
+    email_message = f"Subject:New Message\n\nName: {name}\nEmail: {email}\nPhone: {phone}\nMessage:{message}"
+    with smtplib.SMTP("smtp.gmail.com") as connection:
+        connection.starttls()
+        connection.login(OWN_EMAIL, OWN_PASSWORD)
+        connection.sendmail(
+            from_addr=email_message,
+            to_addrs=OWN_EMAIL,
+            msg=email_message
+        )
 
 
 if __name__ == "__main__":

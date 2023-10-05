@@ -11,7 +11,6 @@ from functools import wraps
 from flask import abort
 from forms import CommentForm
 from flask_gravatar import Gravatar
-import requests
 import smtplib
 import os
 from dotenv import load_dotenv
@@ -263,4 +262,4 @@ def send_email(name, email, phone, message):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5002)
+    app.run(debug=False, port=5002)
